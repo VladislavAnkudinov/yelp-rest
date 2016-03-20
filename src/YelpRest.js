@@ -1,7 +1,7 @@
 import Yelp from './Yelp';
+import _ from 'lodash';
 
 var log;
-import _ from 'lodash';
 
 /**
  * YelpRest extends Yelp class to provide REST access to Yelp class functionality
@@ -24,31 +24,51 @@ export default class YelpRest extends Yelp {
    * @returns {object} - Query parameters mapped to Yelp API
    */
   static queryToParamsMapper(query) {
-    var params = _.clone(query);
-    _.extend(params, {
-      term: 'food',
-      location: 'Montreal'
-    });
+    query = _.clone(query);
+    if (!query.lat) return null;  // latitude required
+    if (!query.lng) return null;  // longitude required
+    let params = {
+      ll: `${query.lat},${query.lng}`,
+      // Sort by distance if not specified.
+      sort: typeof query.sort == 'undefined' ? YelpRest.SORT_DISTANCE : query.sort
+    };
+    delete query.lat;
+    delete query.lng;
+    delete query.sort;
+    // Push everything despite coordinates and sort method to search term
+    params.term = Object.keys(query).map((key) => `${key}+${query[key]}`).join('+');
     log.info('params =', params);
     return params;
   }
 
+  // Constanst for Yelp Search API https://www.yelp.com/developers/documentation/v2/search_api
+  static SORT_BEST_MATCHECED = 0;
+  static SORT_DISTANCE = 1;
+  static SORT_HIGHEST_RATED = 2;
+
   /**
-   * YelpRest middelware function to response with Yelp data on custom YelpRest request
-   * @param {object} req - Request object
-   * @param {object} res - Response object
+   * @returns {function(this:YelpRest)} -  YelpRest search request handler function
    */
-  middleware(req, res) {
-    log.info('got request');
-    log.info('query =', req.query);
-    var params = this.queryToParamsMapper(req.query);
-    return this.search(params)
-      .then((data) => {
-        res.json(data);
-      })
-      .catch((err) => {
-        res.json(err);
-      });
-  };
+  search() {
+    let search = super.search;
+    return function (req, res) {
+      log.trace(`got request, query =${req.query}`);
+      var params = YelpRest.queryToParamsMapper(req.query);
+      if (!params) {
+        var err = {error: 'Wrong query'};
+        log.error(err);
+        res.status(400).json(err);
+        return
+      }
+      search.call(this, params)
+        .then((data) => {
+          res.json(data);
+        })
+        .catch((err) => {
+          log.error(err);
+          res.status(400).json(err);
+        });
+    }.bind(this)
+  }
 
 };

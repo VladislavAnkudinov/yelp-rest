@@ -49,13 +49,13 @@
 
 	'use strict';
 	
+	__webpack_require__(/*! dotenv/config */ 6);
+	
 	var _Yelp = __webpack_require__(/*! ../Yelp */ 1);
 	
 	var _Yelp2 = _interopRequireDefault(_Yelp);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	__webpack_require__(/*! dotenv */ 4).config();
 	
 	var chai = __webpack_require__(/*! chai */ 5);
 	var expect = chai.expect;
@@ -66,6 +66,7 @@
 	  token: process.env.YELP_TOKEN,
 	  token_secret: process.env.YELP_TOKEN_SECRET
 	};
+	
 	var yelp = new _Yelp2.default(opts);
 	
 	describe('Yelp API access testing...', function () {
@@ -170,7 +171,7 @@
 	
 	  /**
 	   * General Yelp API request
-	   * 
+	   *
 	   * @param {string} resource - Yelp API resource: search / buisiness/<id> / phone_search
 	   * @param {object} params - Yelp API request parameters
 	   * @param {function} cb - Callback function (optional)
@@ -274,15 +275,7 @@
 	module.exports = require("oauth");
 
 /***/ },
-/* 4 */
-/*!*************************!*\
-  !*** external "dotenv" ***!
-  \*************************/
-/***/ function(module, exports) {
-
-	module.exports = require("dotenv");
-
-/***/ },
+/* 4 */,
 /* 5 */
 /*!***********************!*\
   !*** external "chai" ***!
@@ -290,6 +283,126 @@
 /***/ function(module, exports) {
 
 	module.exports = require("chai");
+
+/***/ },
+/* 6 */
+/*!****************************!*\
+  !*** ./~/dotenv/config.js ***!
+  \****************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	(function () {
+	  var options = {};
+	  process.argv.forEach(function (val, idx, arr) {
+	    var matches = val.match(/^dotenv_config_(.+)=(.+)/);
+	    if (matches) {
+	      options[matches[1]] = matches[2];
+	    }
+	  });
+	
+	  __webpack_require__(/*! ./lib/main */ 7).config(options);
+	})();
+
+/***/ },
+/* 7 */
+/*!******************************!*\
+  !*** ./~/dotenv/lib/main.js ***!
+  \******************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var fs = __webpack_require__(/*! fs */ 8);
+	
+	module.exports = {
+	  /*
+	   * Main entry point into dotenv. Allows configuration before loading .env
+	   * @param {Object} options - valid options: path ('.env'), encoding ('utf8')
+	   * @returns {Boolean}
+	  */
+	  config: function config(options) {
+	    var path = '.env';
+	    var encoding = 'utf8';
+	    var silent = false;
+	
+	    if (options) {
+	      if (options.silent) {
+	        silent = options.silent;
+	      }
+	      if (options.path) {
+	        path = options.path;
+	      }
+	      if (options.encoding) {
+	        encoding = options.encoding;
+	      }
+	    }
+	
+	    try {
+	      // specifying an encoding returns a string instead of a buffer
+	      var parsedObj = this.parse(fs.readFileSync(path, { encoding: encoding }));
+	
+	      Object.keys(parsedObj).forEach(function (key) {
+	        process.env[key] = process.env[key] || parsedObj[key];
+	      });
+	
+	      return parsedObj;
+	    } catch (e) {
+	      if (!silent) {
+	        console.error(e);
+	      }
+	      return false;
+	    }
+	  },
+	
+	  /*
+	   * Parses a string or buffer into an object
+	   * @param {String|Buffer} src - source to be parsed
+	   * @returns {Object}
+	  */
+	  parse: function parse(src) {
+	    var obj = {};
+	
+	    // convert Buffers before splitting into lines and processing
+	    src.toString().split('\n').forEach(function (line) {
+	      // matching "KEY' and 'VAL' in 'KEY=VAL'
+	      var keyValueArr = line.match(/^\s*([\w\.\-]+)\s*=\s*(.*)?\s*$/);
+	      // matched?
+	      if (keyValueArr != null) {
+	        var key = keyValueArr[1];
+	
+	        // default undefined or missing values to empty string
+	        var value = keyValueArr[2] ? keyValueArr[2] : '';
+	
+	        // expand newlines in quoted values
+	        var len = value ? value.length : 0;
+	        if (len > 0 && value.charAt(0) === '\"' && value.charAt(len - 1) === '\"') {
+	          value = value.replace(/\\n/gm, '\n');
+	        }
+	
+	        // remove any surrounding quotes and extra spaces
+	        value = value.replace(/(^['"]|['"]$)/g, '').trim();
+	
+	        obj[key] = value;
+	      }
+	    });
+	
+	    return obj;
+	  }
+	
+	};
+	
+	module.exports.load = module.exports.config;
+
+/***/ },
+/* 8 */
+/*!*********************!*\
+  !*** external "fs" ***!
+  \*********************/
+/***/ function(module, exports) {
+
+	module.exports = require("fs");
 
 /***/ }
 /******/ ]);

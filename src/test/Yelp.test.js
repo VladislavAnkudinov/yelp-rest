@@ -1,15 +1,17 @@
-require('dotenv').config();
+import 'dotenv/config';
 
 var chai = require('chai');
 var expect = chai.expect;
 
 import Yelp from '../Yelp';
+
 const opts = {
   consumer_key: process.env.YELP_CONSUMER_KEY,
   consumer_secret: process.env.YELP_CONSUMER_SECRET,
   token: process.env.YELP_TOKEN,
   token_secret: process.env.YELP_TOKEN_SECRET
 };
+
 const yelp = new Yelp(opts);
 
 describe('Yelp API access testing...', function () {

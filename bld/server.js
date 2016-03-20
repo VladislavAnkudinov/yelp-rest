@@ -49,11 +49,9 @@
 
 	'use strict';
 	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
 	__webpack_require__(/*! source-map-support/register */ 1);
+	
+	__webpack_require__(/*! dotenv/config */ 14);
 	
 	var _bunyan = __webpack_require__(/*! bunyan */ 6);
 	
@@ -63,55 +61,53 @@
 	
 	var _YelpRest2 = _interopRequireDefault(_YelpRest);
 	
+	var _express = __webpack_require__(/*! express */ 13);
+	
+	var _express2 = _interopRequireDefault(_express);
+	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
-	__webpack_require__(/*! dotenv */ 12).config();
-	exports.default = _YelpRest2.default;
+	// Instantiate express app
+	var app = (0, _express2.default)();
+	app.set('port', process.env.PORT);
 	
+	// Create logger
+	var ringbuffer = new _bunyan2.default.RingBuffer({ limit: 100 });
+	var log = _bunyan2.default.createLogger({
+	  name: 'Yelp Rest Server',
+	  streams: [{
+	    level: 'info',
+	    stream: process.stdout
+	  }, {
+	    level: 'trace',
+	    type: 'raw',
+	    stream: ringbuffer
+	  }]
+	});
+	app.set('log', log);
 	
-	if (process.argv[1]) {
-	  var ringbuffer;
-	  var yelpRest;
+	// Instantiate YelpRest
+	var yelpRest = new _YelpRest2.default({
+	  yelpCredentials: {
+	    consumer_key: process.env.YELP_CONSUMER_KEY,
+	    consumer_secret: process.env.YELP_CONSUMER_SECRET,
+	    token: process.env.YELP_TOKEN,
+	    token_secret: process.env.YELP_TOKEN_SECRET
+	  },
+	  log: log
+	});
 	
-	  (function () {
-	    console.log('Runing server...');
-	    var express = __webpack_require__(/*! express */ 13);
-	    var app = express();
-	    app.set('port', process.env.PORT);
-	    ringbuffer = new _bunyan2.default.RingBuffer({ limit: 100 });
+	// Append search request handler
+	app.get('/api/search', yelpRest.search());
 	
-	    var log = _bunyan2.default.createLogger({
-	      name: 'Yelp Rest Server',
-	      streams: [{
-	        level: 'info',
-	        stream: process.stdout
-	      }, {
-	        level: 'trace',
-	        type: 'raw', // use 'raw' to get raw log record objects
-	        stream: ringbuffer
-	      }]
-	    });
-	    yelpRest = new _YelpRest2.default({
-	      yelpCredentials: {
-	        consumer_key: process.env.YELP_CONSUMER_KEY,
-	        consumer_secret: process.env.YELP_CONSUMER_SECRET,
-	        token: process.env.YELP_TOKEN,
-	        token_secret: process.env.YELP_TOKEN_SECRET
-	      },
-	      log: log
-	    });
-	
-	    app.set('log', log);
-	    app.get('/api/search', yelpRest.middleware);
-	    app.listen(process.env.PORT, function (err) {
-	      if (err) {
-	        log.error(err);
-	        return;
-	      }
-	      log.info('Server listening on port ' + app.get('port') + '...');
-	    });
-	  })();
-	}
+	// Run the server
+	app.listen(process.env.PORT, function (err) {
+	  if (err) {
+	    log.error(err);
+	    return;
+	  }
+	  log.info('Server listening on port ' + app.get('port') + '...');
+	});
 
 /***/ },
 /* 1 */
@@ -674,6 +670,8 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
+	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+	
 	var _Yelp2 = __webpack_require__(/*! ./Yelp */ 8);
 	
 	var _Yelp3 = _interopRequireDefault(_Yelp2);
@@ -691,7 +689,6 @@
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 	
 	var log;
-	
 	
 	/**
 	 * YelpRest extends Yelp class to provide REST access to Yelp class functionality
@@ -723,40 +720,63 @@
 	
 	
 	  _createClass(YelpRest, [{
-	    key: 'middleware',
+	    key: 'search',
 	
 	
 	    /**
-	     * YelpRest middelware function to response with Yelp data on custom YelpRest request
-	     * @param {object} req - Request object
-	     * @param {object} res - Response object
+	     * @returns {function(this:YelpRest)} -  YelpRest search request handler function
 	     */
-	    value: function middleware(req, res) {
-	      log.info('got request');
-	      log.info('query =', req.query);
-	      var params = this.queryToParamsMapper(req.query);
-	      return this.search(params).then(function (data) {
-	        res.json(data);
-	      }).catch(function (err) {
-	        res.json(err);
-	      });
+	    value: function search() {
+	      var search = _get(Object.getPrototypeOf(YelpRest.prototype), 'search', this);
+	      return function (req, res) {
+	        log.trace('got request, query =' + req.query);
+	        var params = YelpRest.queryToParamsMapper(req.query);
+	        if (!params) {
+	          var err = { error: 'Wrong query' };
+	          log.error(err);
+	          res.status(400).json(err);
+	          return;
+	        }
+	        search.call(this, params).then(function (data) {
+	          res.json(data);
+	        }).catch(function (err) {
+	          log.error(err);
+	          res.status(400).json(err);
+	        });
+	      }.bind(this);
 	    }
 	  }], [{
 	    key: 'queryToParamsMapper',
 	    value: function queryToParamsMapper(query) {
-	      var params = _lodash2.default.clone(query);
-	      _lodash2.default.extend(params, {
-	        term: 'food',
-	        location: 'Montreal'
-	      });
+	      query = _lodash2.default.clone(query);
+	      if (!query.lat) return null; // latitude required
+	      if (!query.lng) return null; // longitude required
+	      var params = {
+	        ll: query.lat + ',' + query.lng,
+	        // Sort by distance if not specified.
+	        sort: typeof query.sort == 'undefined' ? YelpRest.SORT_DISTANCE : query.sort
+	      };
+	      delete query.lat;
+	      delete query.lng;
+	      delete query.sort;
+	      // Push everything despite coordinates and sort method to search term
+	      params.term = Object.keys(query).map(function (key) {
+	        return key + '+' + query[key];
+	      }).join('+');
 	      log.info('params =', params);
 	      return params;
 	    }
+	
+	    // Constanst for Yelp Search API https://www.yelp.com/developers/documentation/v2/search_api
+	
 	  }]);
 	
 	  return YelpRest;
 	}(_Yelp3.default);
 	
+	YelpRest.SORT_BEST_MATCHECED = 0;
+	YelpRest.SORT_DISTANCE = 1;
+	YelpRest.SORT_HIGHEST_RATED = 2;
 	exports.default = YelpRest;
 	;
 
@@ -811,7 +831,7 @@
 	
 	  /**
 	   * General Yelp API request
-	   * 
+	   *
 	   * @param {string} resource - Yelp API resource: search / buisiness/<id> / phone_search
 	   * @param {object} params - Yelp API request parameters
 	   * @param {function} cb - Callback function (optional)
@@ -924,15 +944,7 @@
 	module.exports = require("lodash");
 
 /***/ },
-/* 12 */
-/*!*************************!*\
-  !*** external "dotenv" ***!
-  \*************************/
-/***/ function(module, exports) {
-
-	module.exports = require("dotenv");
-
-/***/ },
+/* 12 */,
 /* 13 */
 /*!**************************!*\
   !*** external "express" ***!
@@ -940,6 +952,117 @@
 /***/ function(module, exports) {
 
 	module.exports = require("express");
+
+/***/ },
+/* 14 */
+/*!****************************!*\
+  !*** ./~/dotenv/config.js ***!
+  \****************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	(function () {
+	  var options = {};
+	  process.argv.forEach(function (val, idx, arr) {
+	    var matches = val.match(/^dotenv_config_(.+)=(.+)/);
+	    if (matches) {
+	      options[matches[1]] = matches[2];
+	    }
+	  });
+	
+	  __webpack_require__(/*! ./lib/main */ 15).config(options);
+	})();
+
+/***/ },
+/* 15 */
+/*!******************************!*\
+  !*** ./~/dotenv/lib/main.js ***!
+  \******************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var fs = __webpack_require__(/*! fs */ 5);
+	
+	module.exports = {
+	  /*
+	   * Main entry point into dotenv. Allows configuration before loading .env
+	   * @param {Object} options - valid options: path ('.env'), encoding ('utf8')
+	   * @returns {Boolean}
+	  */
+	  config: function config(options) {
+	    var path = '.env';
+	    var encoding = 'utf8';
+	    var silent = false;
+	
+	    if (options) {
+	      if (options.silent) {
+	        silent = options.silent;
+	      }
+	      if (options.path) {
+	        path = options.path;
+	      }
+	      if (options.encoding) {
+	        encoding = options.encoding;
+	      }
+	    }
+	
+	    try {
+	      // specifying an encoding returns a string instead of a buffer
+	      var parsedObj = this.parse(fs.readFileSync(path, { encoding: encoding }));
+	
+	      Object.keys(parsedObj).forEach(function (key) {
+	        process.env[key] = process.env[key] || parsedObj[key];
+	      });
+	
+	      return parsedObj;
+	    } catch (e) {
+	      if (!silent) {
+	        console.error(e);
+	      }
+	      return false;
+	    }
+	  },
+	
+	  /*
+	   * Parses a string or buffer into an object
+	   * @param {String|Buffer} src - source to be parsed
+	   * @returns {Object}
+	  */
+	  parse: function parse(src) {
+	    var obj = {};
+	
+	    // convert Buffers before splitting into lines and processing
+	    src.toString().split('\n').forEach(function (line) {
+	      // matching "KEY' and 'VAL' in 'KEY=VAL'
+	      var keyValueArr = line.match(/^\s*([\w\.\-]+)\s*=\s*(.*)?\s*$/);
+	      // matched?
+	      if (keyValueArr != null) {
+	        var key = keyValueArr[1];
+	
+	        // default undefined or missing values to empty string
+	        var value = keyValueArr[2] ? keyValueArr[2] : '';
+	
+	        // expand newlines in quoted values
+	        var len = value ? value.length : 0;
+	        if (len > 0 && value.charAt(0) === '\"' && value.charAt(len - 1) === '\"') {
+	          value = value.replace(/\\n/gm, '\n');
+	        }
+	
+	        // remove any surrounding quotes and extra spaces
+	        value = value.replace(/(^['"]|['"]$)/g, '').trim();
+	
+	        obj[key] = value;
+	      }
+	    });
+	
+	    return obj;
+	  }
+	
+	};
+	
+	module.exports.load = module.exports.config;
 
 /***/ }
 /******/ ]);

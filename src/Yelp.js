@@ -30,7 +30,7 @@ export default class Yelp {
 
   /**
    * General Yelp API request
-   * 
+   *
    * @param {string} resource - Yelp API resource: search / buisiness/<id> / phone_search
    * @param {object} params - Yelp API request parameters
    * @param {function} cb - Callback function (optional)
@@ -95,4 +95,5 @@ export default class Yelp {
   phoneSearch(params, callback) {
     return this.get('phone_search', params, callback);
   }
+
 }
