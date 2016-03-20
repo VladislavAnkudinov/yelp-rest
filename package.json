@@ -1,13 +1,14 @@
 {
   "description": "Lightweight, easy to deploy REST wrapper for Yelp 2.0 API",
   "version": "0.1.0",
+  "main": "./bld/server.js",
   "scripts": {
     "build": "./node_modules/.bin/webpack",
     "start": "node bld/server.js | node_modules/.bin/bunyan",
     "run": "./node_modules/.bin/babel-node src/server.js | node_modules/.bin/bunyan",
     "watch-rebuild": "./node_modules/.bin/webpack -wd",
     "watch-restart": "./node_modules/.bin/nodemon",
-    "watch": "npm run watch-rebuild & npm run watch-restart",
+    "watch": "npm run watch-rebuild & npm run watch-restart | node_modules/.bin/bunyan",
     "dev": "npm run watch",
     "test": "./node_modules/.bin/mocha bld/test/",
     "lint": "./node_modules/.bin/eslint src/",
