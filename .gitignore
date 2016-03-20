@@ -1,0 +1,8 @@
+/node_modules
+# Hide environment wariables
+.env
+# Distribute Webstorm style settings too
+.idea/workspace.xml
+.idea/tasks.xml
+# Not include jsdoc
+/out
