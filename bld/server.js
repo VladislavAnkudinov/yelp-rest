@@ -42,26 +42,23 @@
 /************************************************************************/
 /******/ ([
 /* 0 */
-/*!***********************!*\
-  !*** ./src/server.js ***!
-  \***********************/
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	__webpack_require__(/*! source-map-support/register */ 1);
+	__webpack_require__(1);
 	
-	__webpack_require__(/*! dotenv/config */ 14);
+	__webpack_require__(6);
 	
-	var _bunyan = __webpack_require__(/*! bunyan */ 6);
+	var _bunyan = __webpack_require__(8);
 	
 	var _bunyan2 = _interopRequireDefault(_bunyan);
 	
-	var _YelpRest = __webpack_require__(/*! ./YelpRest */ 7);
+	var _YelpRest = __webpack_require__(9);
 	
 	var _YelpRest2 = _interopRequireDefault(_YelpRest);
 	
-	var _express = __webpack_require__(/*! express */ 13);
+	var _express = __webpack_require__(14);
 	
 	var _express2 = _interopRequireDefault(_express);
 	
@@ -111,29 +108,23 @@
 
 /***/ },
 /* 1 */
-/*!******************************************!*\
-  !*** ./~/source-map-support/register.js ***!
-  \******************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	__webpack_require__(/*! ./ */ 2).install();
+	__webpack_require__(2).install();
 
 /***/ },
 /* 2 */
-/*!****************************************************!*\
-  !*** ./~/source-map-support/source-map-support.js ***!
-  \****************************************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 	
-	var SourceMapConsumer = __webpack_require__(/*! source-map */ 3).SourceMapConsumer;
-	var path = __webpack_require__(/*! path */ 4);
-	var fs = __webpack_require__(/*! fs */ 5);
+	var SourceMapConsumer = __webpack_require__(3).SourceMapConsumer;
+	var path = __webpack_require__(4);
+	var fs = __webpack_require__(5);
 	
 	// Only install once if called multiple times
 	var errorFormatterInstalled = false;
@@ -621,45 +612,135 @@
 
 /***/ },
 /* 3 */
-/*!*****************************!*\
-  !*** external "source-map" ***!
-  \*****************************/
 /***/ function(module, exports) {
 
 	module.exports = require("source-map");
 
 /***/ },
 /* 4 */
-/*!***********************!*\
-  !*** external "path" ***!
-  \***********************/
 /***/ function(module, exports) {
 
 	module.exports = require("path");
 
 /***/ },
 /* 5 */
-/*!*********************!*\
-  !*** external "fs" ***!
-  \*********************/
 /***/ function(module, exports) {
 
 	module.exports = require("fs");
 
 /***/ },
 /* 6 */
-/*!*************************!*\
-  !*** external "bunyan" ***!
-  \*************************/
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	(function () {
+	  var options = {};
+	  process.argv.forEach(function (val, idx, arr) {
+	    var matches = val.match(/^dotenv_config_(.+)=(.+)/);
+	    if (matches) {
+	      options[matches[1]] = matches[2];
+	    }
+	  });
+	
+	  __webpack_require__(7).config(options);
+	})();
+
+/***/ },
+/* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var fs = __webpack_require__(5);
+	
+	module.exports = {
+	  /*
+	   * Main entry point into dotenv. Allows configuration before loading .env
+	   * @param {Object} options - valid options: path ('.env'), encoding ('utf8')
+	   * @returns {Boolean}
+	  */
+	  config: function config(options) {
+	    var path = '.env';
+	    var encoding = 'utf8';
+	    var silent = false;
+	
+	    if (options) {
+	      if (options.silent) {
+	        silent = options.silent;
+	      }
+	      if (options.path) {
+	        path = options.path;
+	      }
+	      if (options.encoding) {
+	        encoding = options.encoding;
+	      }
+	    }
+	
+	    try {
+	      // specifying an encoding returns a string instead of a buffer
+	      var parsedObj = this.parse(fs.readFileSync(path, { encoding: encoding }));
+	
+	      Object.keys(parsedObj).forEach(function (key) {
+	        process.env[key] = process.env[key] || parsedObj[key];
+	      });
+	
+	      return parsedObj;
+	    } catch (e) {
+	      if (!silent) {
+	        console.error(e);
+	      }
+	      return false;
+	    }
+	  },
+	
+	  /*
+	   * Parses a string or buffer into an object
+	   * @param {String|Buffer} src - source to be parsed
+	   * @returns {Object}
+	  */
+	  parse: function parse(src) {
+	    var obj = {};
+	
+	    // convert Buffers before splitting into lines and processing
+	    src.toString().split('\n').forEach(function (line) {
+	      // matching "KEY' and 'VAL' in 'KEY=VAL'
+	      var keyValueArr = line.match(/^\s*([\w\.\-]+)\s*=\s*(.*)?\s*$/);
+	      // matched?
+	      if (keyValueArr != null) {
+	        var key = keyValueArr[1];
+	
+	        // default undefined or missing values to empty string
+	        var value = keyValueArr[2] ? keyValueArr[2] : '';
+	
+	        // expand newlines in quoted values
+	        var len = value ? value.length : 0;
+	        if (len > 0 && value.charAt(0) === '\"' && value.charAt(len - 1) === '\"') {
+	          value = value.replace(/\\n/gm, '\n');
+	        }
+	
+	        // remove any surrounding quotes and extra spaces
+	        value = value.replace(/(^['"]|['"]$)/g, '').trim();
+	
+	        obj[key] = value;
+	      }
+	    });
+	
+	    return obj;
+	  }
+	
+	};
+	
+	module.exports.load = module.exports.config;
+
+/***/ },
+/* 8 */
 /***/ function(module, exports) {
 
 	module.exports = require("bunyan");
 
 /***/ },
-/* 7 */
-/*!*************************!*\
-  !*** ./src/YelpRest.js ***!
-  \*************************/
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -672,11 +753,11 @@
 	
 	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 	
-	var _Yelp2 = __webpack_require__(/*! ./Yelp */ 8);
+	var _Yelp2 = __webpack_require__(10);
 	
 	var _Yelp3 = _interopRequireDefault(_Yelp2);
 	
-	var _lodash = __webpack_require__(/*! lodash */ 11);
+	var _lodash = __webpack_require__(13);
 	
 	var _lodash2 = _interopRequireDefault(_lodash);
 	
@@ -689,6 +770,11 @@
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 	
 	var log;
+	
+	// Constanst for Yelp Search API https://www.yelp.com/developers/documentation/v2/search_api
+	var SORT_BEST_MATCHECED = 0;
+	var SORT_DISTANCE = 1;
+	var SORT_HIGHEST_RATED = 2;
 	
 	/**
 	 * YelpRest extends Yelp class to provide REST access to Yelp class functionality
@@ -729,7 +815,7 @@
 	    value: function search() {
 	      var search = _get(Object.getPrototypeOf(YelpRest.prototype), 'search', this);
 	      return function (req, res) {
-	        log.trace('got request, query =' + req.query);
+	        log.info('got request, query =', req.query);
 	        var params = YelpRest.queryToParamsMapper(req.query);
 	        if (!params) {
 	          var err = { error: 'Wrong query' };
@@ -754,7 +840,7 @@
 	      var params = {
 	        ll: query.lat + ',' + query.lng,
 	        // Sort by distance if not specified.
-	        sort: typeof query.sort == 'undefined' ? YelpRest.SORT_DISTANCE : query.sort
+	        sort: typeof query.sort == 'undefined' ? SORT_DISTANCE : query.sort
 	      };
 	      delete query.lat;
 	      delete query.lng;
@@ -763,28 +849,19 @@
 	      params.term = Object.keys(query).map(function (key) {
 	        return key + '+' + query[key];
 	      }).join('+');
-	      log.info('params =', params);
+	      log.info('do request to Yelp API, params =', params);
 	      return params;
 	    }
-	
-	    // Constanst for Yelp Search API https://www.yelp.com/developers/documentation/v2/search_api
-	
 	  }]);
 	
 	  return YelpRest;
 	}(_Yelp3.default);
 	
-	YelpRest.SORT_BEST_MATCHECED = 0;
-	YelpRest.SORT_DISTANCE = 1;
-	YelpRest.SORT_HIGHEST_RATED = 2;
 	exports.default = YelpRest;
 	;
 
 /***/ },
-/* 8 */
-/*!*********************!*\
-  !*** ./src/Yelp.js ***!
-  \*********************/
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -795,11 +872,11 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _querystring = __webpack_require__(/*! querystring */ 9);
+	var _querystring = __webpack_require__(11);
 	
 	var _querystring2 = _interopRequireDefault(_querystring);
 	
-	var _oauth = __webpack_require__(/*! oauth */ 10);
+	var _oauth = __webpack_require__(12);
 	
 	var _oauth2 = _interopRequireDefault(_oauth);
 	
@@ -917,152 +994,28 @@
 	exports.default = Yelp;
 
 /***/ },
-/* 9 */
-/*!******************************!*\
-  !*** external "querystring" ***!
-  \******************************/
+/* 11 */
 /***/ function(module, exports) {
 
 	module.exports = require("querystring");
 
 /***/ },
-/* 10 */
-/*!************************!*\
-  !*** external "oauth" ***!
-  \************************/
+/* 12 */
 /***/ function(module, exports) {
 
 	module.exports = require("oauth");
 
 /***/ },
-/* 11 */
-/*!*************************!*\
-  !*** external "lodash" ***!
-  \*************************/
+/* 13 */
 /***/ function(module, exports) {
 
 	module.exports = require("lodash");
 
 /***/ },
-/* 12 */,
-/* 13 */
-/*!**************************!*\
-  !*** external "express" ***!
-  \**************************/
+/* 14 */
 /***/ function(module, exports) {
 
 	module.exports = require("express");
-
-/***/ },
-/* 14 */
-/*!****************************!*\
-  !*** ./~/dotenv/config.js ***!
-  \****************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	(function () {
-	  var options = {};
-	  process.argv.forEach(function (val, idx, arr) {
-	    var matches = val.match(/^dotenv_config_(.+)=(.+)/);
-	    if (matches) {
-	      options[matches[1]] = matches[2];
-	    }
-	  });
-	
-	  __webpack_require__(/*! ./lib/main */ 15).config(options);
-	})();
-
-/***/ },
-/* 15 */
-/*!******************************!*\
-  !*** ./~/dotenv/lib/main.js ***!
-  \******************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var fs = __webpack_require__(/*! fs */ 5);
-	
-	module.exports = {
-	  /*
-	   * Main entry point into dotenv. Allows configuration before loading .env
-	   * @param {Object} options - valid options: path ('.env'), encoding ('utf8')
-	   * @returns {Boolean}
-	  */
-	  config: function config(options) {
-	    var path = '.env';
-	    var encoding = 'utf8';
-	    var silent = false;
-	
-	    if (options) {
-	      if (options.silent) {
-	        silent = options.silent;
-	      }
-	      if (options.path) {
-	        path = options.path;
-	      }
-	      if (options.encoding) {
-	        encoding = options.encoding;
-	      }
-	    }
-	
-	    try {
-	      // specifying an encoding returns a string instead of a buffer
-	      var parsedObj = this.parse(fs.readFileSync(path, { encoding: encoding }));
-	
-	      Object.keys(parsedObj).forEach(function (key) {
-	        process.env[key] = process.env[key] || parsedObj[key];
-	      });
-	
-	      return parsedObj;
-	    } catch (e) {
-	      if (!silent) {
-	        console.error(e);
-	      }
-	      return false;
-	    }
-	  },
-	
-	  /*
-	   * Parses a string or buffer into an object
-	   * @param {String|Buffer} src - source to be parsed
-	   * @returns {Object}
-	  */
-	  parse: function parse(src) {
-	    var obj = {};
-	
-	    // convert Buffers before splitting into lines and processing
-	    src.toString().split('\n').forEach(function (line) {
-	      // matching "KEY' and 'VAL' in 'KEY=VAL'
-	      var keyValueArr = line.match(/^\s*([\w\.\-]+)\s*=\s*(.*)?\s*$/);
-	      // matched?
-	      if (keyValueArr != null) {
-	        var key = keyValueArr[1];
-	
-	        // default undefined or missing values to empty string
-	        var value = keyValueArr[2] ? keyValueArr[2] : '';
-	
-	        // expand newlines in quoted values
-	        var len = value ? value.length : 0;
-	        if (len > 0 && value.charAt(0) === '\"' && value.charAt(len - 1) === '\"') {
-	          value = value.replace(/\\n/gm, '\n');
-	        }
-	
-	        // remove any surrounding quotes and extra spaces
-	        value = value.replace(/(^['"]|['"]$)/g, '').trim();
-	
-	        obj[key] = value;
-	      }
-	    });
-	
-	    return obj;
-	  }
-	
-	};
-	
-	module.exports.load = module.exports.config;
 
 /***/ }
 /******/ ]);

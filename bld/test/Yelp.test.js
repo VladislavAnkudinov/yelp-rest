@@ -42,22 +42,19 @@
 /************************************************************************/
 /******/ ([
 /* 0 */
-/*!*******************************!*\
-  !*** ./src/test/Yelp.test.js ***!
-  \*******************************/
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	__webpack_require__(/*! dotenv/config */ 6);
+	__webpack_require__(1);
 	
-	var _Yelp = __webpack_require__(/*! ../Yelp */ 1);
+	var _Yelp = __webpack_require__(4);
 	
 	var _Yelp2 = _interopRequireDefault(_Yelp);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
-	var chai = __webpack_require__(/*! chai */ 5);
+	var chai = __webpack_require__(7);
 	var expect = chai.expect;
 	
 	var opts = {
@@ -122,9 +119,117 @@
 
 /***/ },
 /* 1 */
-/*!*********************!*\
-  !*** ./src/Yelp.js ***!
-  \*********************/
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	(function () {
+	  var options = {};
+	  process.argv.forEach(function (val, idx, arr) {
+	    var matches = val.match(/^dotenv_config_(.+)=(.+)/);
+	    if (matches) {
+	      options[matches[1]] = matches[2];
+	    }
+	  });
+	
+	  __webpack_require__(2).config(options);
+	})();
+
+/***/ },
+/* 2 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var fs = __webpack_require__(3);
+	
+	module.exports = {
+	  /*
+	   * Main entry point into dotenv. Allows configuration before loading .env
+	   * @param {Object} options - valid options: path ('.env'), encoding ('utf8')
+	   * @returns {Boolean}
+	  */
+	  config: function config(options) {
+	    var path = '.env';
+	    var encoding = 'utf8';
+	    var silent = false;
+	
+	    if (options) {
+	      if (options.silent) {
+	        silent = options.silent;
+	      }
+	      if (options.path) {
+	        path = options.path;
+	      }
+	      if (options.encoding) {
+	        encoding = options.encoding;
+	      }
+	    }
+	
+	    try {
+	      // specifying an encoding returns a string instead of a buffer
+	      var parsedObj = this.parse(fs.readFileSync(path, { encoding: encoding }));
+	
+	      Object.keys(parsedObj).forEach(function (key) {
+	        process.env[key] = process.env[key] || parsedObj[key];
+	      });
+	
+	      return parsedObj;
+	    } catch (e) {
+	      if (!silent) {
+	        console.error(e);
+	      }
+	      return false;
+	    }
+	  },
+	
+	  /*
+	   * Parses a string or buffer into an object
+	   * @param {String|Buffer} src - source to be parsed
+	   * @returns {Object}
+	  */
+	  parse: function parse(src) {
+	    var obj = {};
+	
+	    // convert Buffers before splitting into lines and processing
+	    src.toString().split('\n').forEach(function (line) {
+	      // matching "KEY' and 'VAL' in 'KEY=VAL'
+	      var keyValueArr = line.match(/^\s*([\w\.\-]+)\s*=\s*(.*)?\s*$/);
+	      // matched?
+	      if (keyValueArr != null) {
+	        var key = keyValueArr[1];
+	
+	        // default undefined or missing values to empty string
+	        var value = keyValueArr[2] ? keyValueArr[2] : '';
+	
+	        // expand newlines in quoted values
+	        var len = value ? value.length : 0;
+	        if (len > 0 && value.charAt(0) === '\"' && value.charAt(len - 1) === '\"') {
+	          value = value.replace(/\\n/gm, '\n');
+	        }
+	
+	        // remove any surrounding quotes and extra spaces
+	        value = value.replace(/(^['"]|['"]$)/g, '').trim();
+	
+	        obj[key] = value;
+	      }
+	    });
+	
+	    return obj;
+	  }
+	
+	};
+	
+	module.exports.load = module.exports.config;
+
+/***/ },
+/* 3 */
+/***/ function(module, exports) {
+
+	module.exports = require("fs");
+
+/***/ },
+/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -135,11 +240,11 @@
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
-	var _querystring = __webpack_require__(/*! querystring */ 2);
+	var _querystring = __webpack_require__(5);
 	
 	var _querystring2 = _interopRequireDefault(_querystring);
 	
-	var _oauth = __webpack_require__(/*! oauth */ 3);
+	var _oauth = __webpack_require__(6);
 	
 	var _oauth2 = _interopRequireDefault(_oauth);
 	
@@ -257,152 +362,22 @@
 	exports.default = Yelp;
 
 /***/ },
-/* 2 */
-/*!******************************!*\
-  !*** external "querystring" ***!
-  \******************************/
+/* 5 */
 /***/ function(module, exports) {
 
 	module.exports = require("querystring");
 
 /***/ },
-/* 3 */
-/*!************************!*\
-  !*** external "oauth" ***!
-  \************************/
+/* 6 */
 /***/ function(module, exports) {
 
 	module.exports = require("oauth");
 
 /***/ },
-/* 4 */,
-/* 5 */
-/*!***********************!*\
-  !*** external "chai" ***!
-  \***********************/
+/* 7 */
 /***/ function(module, exports) {
 
 	module.exports = require("chai");
-
-/***/ },
-/* 6 */
-/*!****************************!*\
-  !*** ./~/dotenv/config.js ***!
-  \****************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	(function () {
-	  var options = {};
-	  process.argv.forEach(function (val, idx, arr) {
-	    var matches = val.match(/^dotenv_config_(.+)=(.+)/);
-	    if (matches) {
-	      options[matches[1]] = matches[2];
-	    }
-	  });
-	
-	  __webpack_require__(/*! ./lib/main */ 7).config(options);
-	})();
-
-/***/ },
-/* 7 */
-/*!******************************!*\
-  !*** ./~/dotenv/lib/main.js ***!
-  \******************************/
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var fs = __webpack_require__(/*! fs */ 8);
-	
-	module.exports = {
-	  /*
-	   * Main entry point into dotenv. Allows configuration before loading .env
-	   * @param {Object} options - valid options: path ('.env'), encoding ('utf8')
-	   * @returns {Boolean}
-	  */
-	  config: function config(options) {
-	    var path = '.env';
-	    var encoding = 'utf8';
-	    var silent = false;
-	
-	    if (options) {
-	      if (options.silent) {
-	        silent = options.silent;
-	      }
-	      if (options.path) {
-	        path = options.path;
-	      }
-	      if (options.encoding) {
-	        encoding = options.encoding;
-	      }
-	    }
-	
-	    try {
-	      // specifying an encoding returns a string instead of a buffer
-	      var parsedObj = this.parse(fs.readFileSync(path, { encoding: encoding }));
-	
-	      Object.keys(parsedObj).forEach(function (key) {
-	        process.env[key] = process.env[key] || parsedObj[key];
-	      });
-	
-	      return parsedObj;
-	    } catch (e) {
-	      if (!silent) {
-	        console.error(e);
-	      }
-	      return false;
-	    }
-	  },
-	
-	  /*
-	   * Parses a string or buffer into an object
-	   * @param {String|Buffer} src - source to be parsed
-	   * @returns {Object}
-	  */
-	  parse: function parse(src) {
-	    var obj = {};
-	
-	    // convert Buffers before splitting into lines and processing
-	    src.toString().split('\n').forEach(function (line) {
-	      // matching "KEY' and 'VAL' in 'KEY=VAL'
-	      var keyValueArr = line.match(/^\s*([\w\.\-]+)\s*=\s*(.*)?\s*$/);
-	      // matched?
-	      if (keyValueArr != null) {
-	        var key = keyValueArr[1];
-	
-	        // default undefined or missing values to empty string
-	        var value = keyValueArr[2] ? keyValueArr[2] : '';
-	
-	        // expand newlines in quoted values
-	        var len = value ? value.length : 0;
-	        if (len > 0 && value.charAt(0) === '\"' && value.charAt(len - 1) === '\"') {
-	          value = value.replace(/\\n/gm, '\n');
-	        }
-	
-	        // remove any surrounding quotes and extra spaces
-	        value = value.replace(/(^['"]|['"]$)/g, '').trim();
-	
-	        obj[key] = value;
-	      }
-	    });
-	
-	    return obj;
-	  }
-	
-	};
-	
-	module.exports.load = module.exports.config;
-
-/***/ },
-/* 8 */
-/*!*********************!*\
-  !*** external "fs" ***!
-  \*********************/
-/***/ function(module, exports) {
-
-	module.exports = require("fs");
 
 /***/ }
 /******/ ]);

@@ -3,6 +3,11 @@ import _ from 'lodash';
 
 var log;
 
+// Constanst for Yelp Search API https://www.yelp.com/developers/documentation/v2/search_api
+let SORT_BEST_MATCHECED = 0;
+let SORT_DISTANCE = 1;
+let SORT_HIGHEST_RATED = 2;
+
 /**
  * YelpRest extends Yelp class to provide REST access to Yelp class functionality
  * @param {object} opts - The object, containing your Yelp credentials as subobject and logger
@@ -30,21 +35,16 @@ export default class YelpRest extends Yelp {
     let params = {
       ll: `${query.lat},${query.lng}`,
       // Sort by distance if not specified.
-      sort: typeof query.sort == 'undefined' ? YelpRest.SORT_DISTANCE : query.sort
+      sort: typeof query.sort == 'undefined' ? SORT_DISTANCE : query.sort
     };
     delete query.lat;
     delete query.lng;
     delete query.sort;
     // Push everything despite coordinates and sort method to search term
     params.term = Object.keys(query).map((key) => `${key}+${query[key]}`).join('+');
-    log.info('params =', params);
+    log.info('do request to Yelp API, params =', params);
     return params;
   }
-
-  // Constanst for Yelp Search API https://www.yelp.com/developers/documentation/v2/search_api
-  static SORT_BEST_MATCHECED = 0;
-  static SORT_DISTANCE = 1;
-  static SORT_HIGHEST_RATED = 2;
 
   /**
    * @returns {function(this:YelpRest)} -  YelpRest search request handler function
@@ -52,13 +52,13 @@ export default class YelpRest extends Yelp {
   search() {
     let search = super.search;
     return function (req, res) {
-      log.trace(`got request, query =${req.query}`);
+      log.info('got request, query =', req.query);
       var params = YelpRest.queryToParamsMapper(req.query);
       if (!params) {
         var err = {error: 'Wrong query'};
         log.error(err);
         res.status(400).json(err);
-        return
+        return;
       }
       search.call(this, params)
         .then((data) => {
@@ -68,7 +68,7 @@ export default class YelpRest extends Yelp {
           log.error(err);
           res.status(400).json(err);
         });
-    }.bind(this)
+    }.bind(this);
   }
 
 };
