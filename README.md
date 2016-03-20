@@ -3,11 +3,11 @@
 # Run
 **To run the server do the following:**
 
-1) Clone the repo
-2) Create `.env` file in the same place as `.env-example` (root directory)
-3) Put your environment variables in `.env` file, e.g. `Yelp Mange API access` stuff
-3) Install major dependencies `npm install --production`
-4) Fire `npm start`
+- Clone the repo
+- Create `.env` file in the same place as `.env-example` (root directory)
+- Put your environment variables in `.env` file, e.g. `Yelp Mange API access` stuff
+- Install major dependencies `npm install --production`
+- Fire `npm start`
 
 
 # Development
