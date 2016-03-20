@@ -45,6 +45,13 @@ npm run lint
 Sources distributed with `.ide` directory containing WebStorm settings to easily achive same development experience
 with other WebStrorm users.
 
+**For JSDoc generation:**
+```sh
+npm run jsdoc
+```
+
+It generates `jsdoc` directory in the root of the project
+
 # License
 
 [MIT](./LICENSE.txt).

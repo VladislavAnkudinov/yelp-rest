@@ -98,7 +98,6 @@
 	        token: process.env.YELP_TOKEN,
 	        token_secret: process.env.YELP_TOKEN_SECRET
 	      },
-	      app: app,
 	      log: log
 	    });
 	
@@ -673,6 +672,8 @@
 	  value: true
 	});
 	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
 	var _Yelp2 = __webpack_require__(/*! ./Yelp */ 8);
 	
 	var _Yelp3 = _interopRequireDefault(_Yelp2);
@@ -691,6 +692,17 @@
 	
 	var log;
 	
+	
+	/**
+	 * YelpRest extends Yelp class to provide REST access to Yelp class functionality
+	 * @param {object} opts - The object, containing your Yelp credentials as subobject and logger
+	 * @param {object} opts.yelpCredentials - The object, containing your Yelp credentials
+	 * @param {string} opts.yelpCredentials.consumer_key - Consumer Key from Yelp's Manage API access
+	 * @param {string} opts.yelpCredentials.consumer_secret - Consumer Secret from Yelp's Manage API access
+	 * @param {string} opts.yelpCredentials.token - Token from Yelp's Manage API access
+	 * @param {string} opts.yelpCredentials.token_secret - Token Secret from Yelp's Manage API access
+	 */
+	
 	var YelpRest = function (_Yelp) {
 	  _inherits(YelpRest, _Yelp);
 	
@@ -699,7 +711,39 @@
 	
 	    var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(YelpRest).call(this, opts.yelpCredentials));
 	
-	    _this.queryToParamsMapper = function (query) {
+	    _this.log = log = opts.log;
+	    return _this;
+	  }
+	
+	  /**
+	   * Get YelpRest parameters and map it to Yelp API parameters
+	   * @param {object} query - Query parameters accepted by YelpRest server
+	   * @returns {object} - Query parameters mapped to Yelp API
+	   */
+	
+	
+	  _createClass(YelpRest, [{
+	    key: 'middleware',
+	
+	
+	    /**
+	     * YelpRest middelware function to response with Yelp data on custom YelpRest request
+	     * @param {object} req - Request object
+	     * @param {object} res - Response object
+	     */
+	    value: function middleware(req, res) {
+	      log.info('got request');
+	      log.info('query =', req.query);
+	      var params = this.queryToParamsMapper(req.query);
+	      return this.search(params).then(function (data) {
+	        res.json(data);
+	      }).catch(function (err) {
+	        res.json(err);
+	      });
+	    }
+	  }], [{
+	    key: 'queryToParamsMapper',
+	    value: function queryToParamsMapper(query) {
 	      var params = _lodash2.default.clone(query);
 	      _lodash2.default.extend(params, {
 	        term: 'food',
@@ -707,22 +751,8 @@
 	      });
 	      log.info('params =', params);
 	      return params;
-	    };
-	
-	    _this.middleware = function (req, res) {
-	      log.info('got request');
-	      log.info('query =', req.query);
-	      var params = _this.queryToParamsMapper(req.query);
-	      return _this.search(params).then(function (data) {
-	        res.json(data);
-	      }).catch(function (err) {
-	        res.json(err);
-	      });
-	    };
-	
-	    _this.log = log = opts.log;
-	    return _this;
-	  }
+	    }
+	  }]);
 	
 	  return YelpRest;
 	}(_Yelp3.default);
@@ -762,10 +792,12 @@
 	var baseUrl = 'http://api.yelp.com/v2/';
 	
 	/**
-	 * Yel class provides access to Yelp API
-	 * @param {object} opts - The options, containing your Yelp credentials
-	 * @param {string} author - The author of the book.
-	 *
+	 * Yelp class provides access to Yelp API
+	 * @param {object} opts - The object, containing your Yelp credentials
+	 * @param {string} opts.consumer_key - Consumer Key from Yelp's Manage API access
+	 * @param {string} opts.consumer_secret - Consumer Secret from Yelp's Manage API access
+	 * @param {string} opts.token - Token from Yelp's Manage API access
+	 * @param {string} opts.token_secret - Token Secret from Yelp's Manage API access
 	 */
 	
 	var Yelp = function () {
@@ -776,6 +808,16 @@
 	    this.oauthTokenSecret = opts.token_secret;
 	    this.oauth = new OAuth(null, null, opts.consumer_key, opts.consumer_secret, opts.version || '1.0', null, 'HMAC-SHA1');
 	  }
+	
+	  /**
+	   * General Yelp API request
+	   * 
+	   * @param {string} resource - Yelp API resource: search / buisiness/<id> / phone_search
+	   * @param {object} params - Yelp API request parameters
+	   * @param {function} cb - Callback function (optional)
+	   * @returns {*}
+	   */
+	
 	
 	  _createClass(Yelp, [{
 	    key: 'get',
@@ -804,11 +846,29 @@
 	      }
 	      return promise;
 	    }
+	
+	    /**
+	     * Yelp Search API request
+	     * https://www.yelp.com/developers/documentation/v2/search_api
+	     * @param {object} params
+	     * @param {function} callback
+	     * @returns {Promise}
+	     */
+	
 	  }, {
 	    key: 'search',
 	    value: function search(params, callback) {
 	      return this.get('search', params, callback);
 	    }
+	
+	    /**
+	     * Yelp Business API request
+	     * https://www.yelp.com/developers/documentation/v2/business
+	     * @param {string} id - The business id at Yelp
+	     * @param {function} callback
+	     * @returns {Promise}
+	     */
+	
 	  }, {
 	    key: 'business',
 	    value: function business(id, callback) {
@@ -816,8 +876,12 @@
 	    }
 	
 	    /**
-	     * Exampe:
-	     * yelp.phone_search({phone: "+12223334444"}, function(error, data) {});
+	     * Yelp Phone Search API request
+	     * https://www.yelp.com/developers/documentation/v2/phone_search
+	     * @param {object} params - The object containing the phone
+	     * @param {string} params.phone - The phone string, eg "+12223334444"
+	     * @param {function} callback
+	     * @returns {Promise}
 	     */
 	
 	  }, {

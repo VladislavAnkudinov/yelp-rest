@@ -32,7 +32,6 @@ if (process.argv[1]) {
       token: process.env.YELP_TOKEN,
       token_secret: process.env.YELP_TOKEN_SECRET
     },
-    app,
     log
   });
   app.set('log', log);

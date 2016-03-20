@@ -10,7 +10,8 @@
     "watch": "npm run watch-rebuild & npm run watch-restart",
     "dev": "npm run watch",
     "test": "./node_modules/.bin/mocha bld/test/",
-    "lint": "./node_modules/.bin/eslint src/"
+    "lint": "./node_modules/.bin/eslint src/",
+    "jsdoc": "./node_modules/.bin/jsdoc src/server.js -c jsdoc.config.json -d jsdoc"
   },
   "repository": {
     "type": "github",
