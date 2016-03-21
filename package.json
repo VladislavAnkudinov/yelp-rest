@@ -1,5 +1,6 @@
 {
   "description": "Lightweight, easy to deploy REST wrapper for Yelp 2.0 API",
+  "name": "yelp-rest",
   "version": "0.1.0",
   "main": "./bld/server.js",
   "scripts": {

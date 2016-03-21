@@ -1,4 +1,7 @@
 /node_modules
+npm-debug.log
+# vim tmp files
+*.swp
 # Hide environment wariables
 .env
 # Distribute Webstorm style settings too
