@@ -8,6 +8,8 @@
 - Put your environment variables in `.env` file, e.g. `Yelp Mange API access` stuff
 - Install major dependencies `npm install --production`
 - Fire `npm start`
+- Navigate your browser to `http://localhost:3000/api/search?lat=40.75493&lng=-73.98878&restaurant=chineese`.
+Don't forget to change port if you specified different than `3000` in your `.env` file
 
 
 # Development

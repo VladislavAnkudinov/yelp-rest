@@ -62,48 +62,88 @@
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
-	// Instantiate express app
 	//import 'source-map-support/register';
-	var app = (0, _express2.default)();
-	app.set('port', process.env.PORT);
 	
-	// Create logger
-	var ringbuffer = new _bunyan2.default.RingBuffer({ limit: 100 });
-	var log = _bunyan2.default.createLogger({
-	  name: 'Yelp Rest Server',
-	  streams: [{
-	    level: 'info',
-	    stream: process.stdout
-	  }, {
-	    level: 'trace',
-	    type: 'raw',
-	    stream: ringbuffer
-	  }]
-	});
-	app.set('log', log);
 	
-	// Instantiate YelpRest
-	var yelpRest = new _YelpRest2.default({
-	  yelpCredentials: {
-	    consumer_key: process.env.YELP_CONSUMER_KEY,
-	    consumer_secret: process.env.YELP_CONSUMER_SECRET,
-	    token: process.env.YELP_TOKEN,
-	    token_secret: process.env.YELP_TOKEN_SECRET
-	  },
-	  log: log
-	});
+	var cluster = __webpack_require__(11);
+	var numCPUs = __webpack_require__(12).cpus().length;
+	// Number of workers, equals number of cores if not specified in .env
+	var numWorkers = process.env.NUM_WORKERS || numCPUs;
 	
-	// Append search request handler
-	app.get('/api/search', yelpRest.search());
+	if (cluster.isMaster) {
+	  var i;
 	
-	// Run the server
-	app.listen(process.env.PORT, function (err) {
-	  if (err) {
-	    log.error(err);
-	    return;
-	  }
-	  log.info('Server listening on port ' + app.get('port') + '...');
-	});
+	  (function () {
+	    // Create logger
+	    var ringbuffer = new _bunyan2.default.RingBuffer({ limit: 100 });
+	    var log = _bunyan2.default.createLogger({
+	      name: 'Yelp Rest Server Master ' + process.pid,
+	      streams: [{
+	        level: 'info',
+	        stream: process.stdout
+	      }, {
+	        level: 'trace',
+	        type: 'raw',
+	        stream: ringbuffer
+	      }]
+	    });
+	    // Fork workers.
+	    for (i = 0; i < numWorkers; i++) {
+	      log.info('Populating worker ' + i);
+	      cluster.fork();
+	    }
+	    cluster.on('exit', function (worker, code, signal) {
+	      log.info('YRS Worker ' + worker.process.pid + ' died');
+	    });
+	  })();
+	} else {
+	  var yelpRest;
+	
+	  (function () {
+	    // Instantiate express app
+	    var app = (0, _express2.default)();
+	    app.set('port', process.env.PORT);
+	
+	    // Create logger
+	    var ringbuffer = new _bunyan2.default.RingBuffer({ limit: 100 });
+	    var log = _bunyan2.default.createLogger({
+	      name: 'YRS Worker ' + process.pid,
+	      streams: [{
+	        level: 'info',
+	        stream: process.stdout
+	      }, {
+	        level: 'trace',
+	        type: 'raw',
+	        stream: ringbuffer
+	      }]
+	    });
+	    app.set('log', log);
+	
+	    // Instantiate YelpRest
+	    yelpRest = new _YelpRest2.default({
+	      yelpCredentials: {
+	        consumer_key: process.env.YELP_CONSUMER_KEY,
+	        consumer_secret: process.env.YELP_CONSUMER_SECRET,
+	        token: process.env.YELP_TOKEN,
+	        token_secret: process.env.YELP_TOKEN_SECRET
+	      },
+	      log: log
+	    });
+	
+	    // Append search request handler
+	
+	    app.get('/api/search', yelpRest.search());
+	
+	    // Run the server
+	    app.listen(process.env.PORT, function (err) {
+	      if (err) {
+	        log.error(err);
+	        return;
+	      }
+	      log.info('Server listening on port ' + app.get('port') + '...');
+	    });
+	  })();
+	}
 
 /***/ },
 /* 1 */
@@ -499,6 +539,18 @@
 /***/ function(module, exports) {
 
 	module.exports = require("express");
+
+/***/ },
+/* 11 */
+/***/ function(module, exports) {
+
+	module.exports = require("cluster");
+
+/***/ },
+/* 12 */
+/***/ function(module, exports) {
+
+	module.exports = require("os");
 
 /***/ }
 /******/ ]);
